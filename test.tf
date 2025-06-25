@@ -37,6 +37,7 @@ resource "aws_route_table" "route-1" {
 resource "aws_subnet" "public_subnet"{
     vpc_id = aws_vpc.vpc-1.id
     cidr_block = "192.167.1.0/24"
+    availability_zone = "ap-south-1a"
 
     tags = {
         Name = "public-subnet"
@@ -68,3 +69,55 @@ resource "local_file" "private_key_pem" {
   file_permission = "0600"
 }
 
+resource "aws_security_group" "sg-1" {
+  name        = "sg1"
+  description = "Allow TLS inbound traffic and all outbound traffic"
+  vpc_id      = aws_vpc.vpc-1.id
+
+  tags = {
+    Name = "sg-1"
+  }
+
+
+
+#security group
+  ingress  {
+      description    =  "ssh"
+      from_port      = 22
+      to_port        = 22
+      protocol       = "tcp"
+      cidr_blocks    = ["0.0.0.0/0"]
+
+  }
+   ingress  {
+      description    =  "http"
+      from_port      = 80
+      to_port        = 80
+      protocol       = "tcp"
+      cidr_blocks    = ["0.0.0.0/0"]
+
+  }
+
+
+
+  egress    {
+     from_port     = 0
+     to_port       = 0
+     protocol      = "-1"
+     cidr_blocks   = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_instance""testing" {
+  ami = "ami-0b09627181c8d5778"
+  instance_type = "t2.micro"
+  count = 1
+  subnet_id = "${aws_subnet.public_subnet.id}"
+  key_name = aws_key_pair.deployer.id
+  associate_public_ip_address = true
+  security_groups = [aws_security_group.sg-1.id]
+  
+  tags = {
+    Name = "testing"
+  }
+}
